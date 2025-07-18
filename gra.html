@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Teleturniej — Gra</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <h1>Teleturniej — Poziom <span id="currentLevel"></span></h1>
+
+  <div id="gameContent">
+    <div class="scoreboard">
+      <div class="team">
+        <h2>Drużyna 1</h2>
+        <p id="team1Score">0</p>
+      </div>
+      <div class="team">
+        <h2>Drużyna 2</h2>
+        <p id="team2Score">0</p>
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button class="play" onclick="playAudio(0)">Beat</button>
+      <button class="play" onclick="playAudio(1)">Zwrotka</button>
+      <button class="play" onclick="playAudio(2)">Refren</button>
+      <button class="stop" onclick="stopAudio()">🛑 Stop</button>
+    </div>
+
+    <div class="buttons">
+      <button class="points" onclick="addPoints(4)">+4 pkt</button>
+      <button class="points" onclick="addPoints(2)">+2 pkt</button>
+      <button class="points" onclick="addPoints(1)">+1 pkt</button>
+    </div>
+
+    <div class="buttons">
+      <button onclick="prevLevel()">⬅️ Wstecz</button>
+      <button onclick="nextLevel()">Dalej ➡️</button>
+      <button onclick="removePoints()">➖ Odejmij punkty</button>
+    </div>
+  </div>
+
+  <div id="endLevel" style="display:none; max-width: 600px; margin: 30px auto; text-align: center;">
+  <h2>Dziękujemy za udział!</h2>
+  <p>To już koniec tej rundy teleturnieju muzycznego. Gratulujemy wszystkim drużynom!</p>
+  <button onclick="goToFamiliada()" style="padding: 15px 30px; font-size: 18px; border-radius: 10px; cursor: pointer;">Przejdź do Familiady</button>
+  <button onclick="restartGame()" style="padding: 15px 30px; font-size: 18px; border-radius: 10px; cursor: pointer; margin-left: 15px;">Powrót do poziomu 1</button>
+</div>
+</body>
+</html>

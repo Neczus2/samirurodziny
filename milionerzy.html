@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Milionerzy Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle, #0a0a23, #000);
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+    .scoreboard {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      background: #111;
+      z-index: 999;
+    }
+    .team-score {
+      background-color: #222;
+      padding: 10px 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+      min-width: 160px;
+      text-align: center;
+    }
+    .quiz-container {
+      max-width: 800px;
+      margin: 120px auto;
+      background: #111;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+      text-align: center;
+    }
+    h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+    .question-number {
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+    .question {
+      font-size: 24px;
+      margin-bottom: 30px;
+    }
+    .answers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    .answer {
+      background: #222;
+      border: 2px solid #444;
+      border-radius: 10px;
+      padding: 20px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .answer:hover {
+      background: #333;
+    }
+    .answer.correct {
+      background-color: green;
+    }
+    .answer.wrong {
+      background-color: red;
+    }
+    #next-btn, #new-continue-btn {
+      margin-top: 30px;
+      padding: 10px 20px;
+      font-size: 18px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+      display: none;
+    }
+    #next-btn:hover, #new-continue-btn:hover {
+      background-color: #0056b3;
+    }
+    #new-continue-btn {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2000;
+    }
+    .hidden {
+      display: none;
+    }
+    #welcome-screen {
+      text-align: center;
+      margin-top: 200px;
+    }
+    #start-btn {
+      padding: 12px 24px;
+      font-size: 20px;
+      border: none;
+      background-color: #28a745;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    #start-btn:hover {
+      background-color: #218838;
+    }
+    #timer {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      padding: 10px 20px;
+      border-radius: 15px;
+      font-size: 24px;
+      font-weight: bold;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+	.finish-button {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 18px 36px;
+  font-size: 22px;
+  font-weight: bold;
+  background-color: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  transition: background-color 0.3s, transform 0.2s;
+  z-index: 1000;
+}
+
+.finish-button:hover {
+  background-color: #45a049;
+  transform: translate(-50%, -50%) scale(1.05);
+}
+
+  </style>
+</head>
+<body>
+
+  <div id="welcome-screen">
+    <h1>Witamy w 1 rundzie wielkiego teleturnieju urodzinowego!</h1>
+    <button id="start-btn">Start</button>
+  </div>
+
+  <div class="scoreboard hidden" id="scoreboard">
+    <div id="team1" class="team-score">Drużyna 1: 0 pkt</div>
+    <div id="team2" class="team-score">Drużyna 2: 0 pkt</div>
+  </div>
+
+  <div class="quiz-container hidden" id="quiz-container">
+    <h1>Milionerzy</h1>
+    <div class="question-number" id="question-number">Pytanie 1 z 25</div>
+    <div class="question" id="question">Ładowanie pytania...</div>
+    <div class="answers" id="answers"></div>
+    <button id="next-btn">Następne pytanie</button>
+  </div>
+
+  <div id="timer" class="hidden">30</div>
+
+  <!-- ✅ Nowy przycisk Dalej -->
+  <button id="new-continue-btn" class="hidden">Dalej</button>
+
+  <!-- Dźwięki -->
+  <audio id="timer-audio" src="123123.mp3" preload="auto"></audio>
+  <audio id="correct-audio" src="dobrze.mp3" preload="auto"></audio>
+  <audio id="wrong-audio" src="zle.mp3" preload="auto"></audio>
+
+  <script>
+    const redirectURL = 'https://twojastrona.pl';
+    let scoreTeam1 = 0;
+    let scoreTeam2 = 0;
+    let quizStarted = false;
+    let currentQuestion = 0;
+    let timerInterval;
+    let timeLeft = 30;
+    let answered = false;
+
+    const team1El = document.getElementById("team1");
+    const team2El = document.getElementById("team2");
+    const scoreboardEl = document.getElementById("scoreboard");
+    const questionElement = document.getElementById("question");
+    const answersElement = document.getElementById("answers");
+    const questionNumberElement = document.getElementById("question-number");
+    const nextBtn = document.getElementById("next-btn");
+    const continueBtn = document.getElementById("new-continue-btn");
+    const timerEl = document.getElementById("timer");
+    const timerAudio = document.getElementById("timer-audio");
+    const correctAudio = document.getElementById("correct-audio");
+    const wrongAudio = document.getElementById("wrong-audio");
+
+    const welcomeScreen = document.getElementById("welcome-screen");
+    const quizContainer = document.getElementById("quiz-container");
+    const startBtn = document.getElementById("start-btn");
+
+    const questions = [
+      { question: "", answers: { a: "Bigos", b: "Pierogi ruskie", c: "Ryba po grecku", d: "Fasolka po bretońsku" }, correct: "a" },
+      { question: "", answers: { a: "Cyberpunk 2077", b: "Wiedźmin III dziki gon", c: "Ghost runer 2", d: "Dying Light 2" }, correct: "b" },
+      { question: "", answers: { a: "Dawid Podsiadło", b: "Popek", c: "Akcent", d: "Sanah" }, correct: "a" },
+      { question: "", answers: { a: "gronostaj", b: "borsuk", c: "ryś", d: " łasica" }, correct: "c" },
+      { question: "", answers: { a: "Julek", b: "Staszek", c: "Krzysiek", d: "Zbyszek" }, correct: "b" },
+      { question: "", answers: { a: "Koran", b: "Star Wars", c: "Harry Potter", d: "Biblia" }, correct: "d" },
+      { question: "", answers: { a: "Indie", b: "USA", c: "Chiny", d: "Brazylia" }, correct: "a" },
+      { question: "", answers: { a: "hiszpanka", b: "dżuma", c: "HPV", d: "HIV" }, correct: "b" },
+      { question: "", answers: { a: "Szafran", b: "Rozmaryn", c: "Imbir", d: "Cynamon" }, correct: "c" },
+      { question: "", answers: { a: "Cisowianka", b: "Żywiec Zdrój", c: "Kropla Beskidu", d: "Primavera" }, correct: "b" },
+      { question: "", answers: { a: "sopran", b: "tenor", c: "alt", d: "bas" }, correct: "a" },
+      { question: "", answers: { a: "zobaczy pierwszą gwiazdke", b: "pocałuje się pod jemiołą", c: "zje najwięcej potraw wigilijnych", d: "upuści widelec" }, correct: "b" },
+      { question: "", answers: { a: "Mansa Musa", b: "Cesarz Shan zong", c: "Czyngis-chan", d: "Cesarz Oktawian August" }, correct: "a" },
+      { question: "", answers: { a: "10zł", b: "8,88zł", c: "8zł", d: "8,50zł" }, correct: "b" },
+      { question: "", answers: { a: "Hiszpański", b: "Brazyiljski", c: "Portugalski", d: "Francuski" }, correct: "c" },
+      { question: "", answers: { a: "5 lat", b: "4 lata", c: "3 lata", d: "6 lat" }, correct: "a" },
+      { question: "", answers: { a: "strit", b: "poker królewski", c: "poker", d: "kareta" }, correct: "b" },
+      { question: "", answers: { a: "pomarańcza", b: "limonka", c: "czarna pożeczka", d: "cytryna" }, correct: "c" },
+      { question: "", answers: { a: "piłka nożna", b: "siatkówka", c: "hokej na lodzie", d: "futball amerykański" }, correct: "b" },
+      { question: "", answers: { a: "żurawina", b: "borówki", c: "banan", d: "malina" }, correct: "d" },
+      { question: "", answers: { a: "pszenicy", b: "zboża", c: "kukurydzy", d: "owsu" }, correct: "a" },
+      { question: "", answers: { a: "kambuz", b: "kubryk", c: "kingston", d: "mesa" }, correct: "c" },
+      { question: "", answers: { a: "Warszawa", b: "Łódź", c: "Kraków", d: "Poznań" }, correct: "b" },
+      { question: "", answers: { a: "Na kanapie", b: "Na fotelu", c: "Na łóżku", d: "Na blacie" }, correct: "b" },
+      { question: "", answers: { a: "13", b: "14", c: "16", d: "15" }, correct: "c" }
+    ];
+
+    function updateScoreboard() {
+      team1El.textContent = `Drużyna 1: ${scoreTeam1} pkt`;
+      team2El.textContent = `Drużyna 2: ${scoreTeam2} pkt`;
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (!quizStarted) return;
+      if (e.key === "1") scoreTeam1 += 4;
+      else if (e.key === "2") scoreTeam2 += 4;
+      updateScoreboard();
+    });
+
+    function showQuestion(index) {
+      answered = false;
+      const q = questions[index];
+      questionElement.textContent = q.question;
+      questionNumberElement.textContent = `Pytanie ${index + 1} z ${questions.length}`;
+      answersElement.innerHTML = "";
+      nextBtn.style.display = "none";
+
+      for (let key in q.answers) {
+        const btn = document.createElement("div");
+        btn.classList.add("answer");
+        btn.textContent = `${key.toUpperCase()}: ${q.answers[key]}`;
+        btn.dataset.key = key;
+        btn.addEventListener("click", () => selectAnswer(btn, q.correct));
+        answersElement.appendChild(btn);
+      }
+
+      resetTimer(q.correct);
+    }
+
+    function selectAnswer(selected, correct) {
+      if (answered) return;
+      answered = true;
+      stopTimer();
+
+      const options = document.querySelectorAll(".answer");
+      options.forEach(btn => {
+        if (btn.dataset.key === correct) btn.classList.add("correct");
+        else btn.classList.add("wrong");
+        btn.style.pointerEvents = "none";
+      });
+
+      if (selected.dataset.key === correct) correctAudio.play();
+      else wrongAudio.play();
+
+      nextBtn.style.display = "inline-block";
+    }
+
+    nextBtn.addEventListener("click", () => {
+  currentQuestion++;
+  if (currentQuestion < questions.length) {
+    showQuestion(currentQuestion);
+  } else {
+    questionElement.textContent = "Gratulacje! Ukończyłeś quiz.";
+    answersElement.innerHTML = "";
+    questionNumberElement.textContent = "";
+    nextBtn.style.display = "none";
+    continueBtn.classList.add("hidden");
+    timerEl.classList.add("hidden");
+    stopTimer();
+
+    // Tworzymy nowy przycisk
+    const finishBtn = document.createElement("button");
+    finishBtn.textContent = "Przejdź dalej";
+    finishBtn.classList.add("finish-button");
+    document.body.appendChild(finishBtn);
+
+    // Dodajemy akcję po kliknięciu i gdzie przenosi
+    finishBtn.addEventListener("click", () => {
+      window.location.href = "jakatomelodia.html";
+    });
+  }
+});
+
+
+
+    continueBtn.addEventListener("click", () => {
+      window.location.href = redirectURL;
+    });
+
+    function resetTimer(correctAnswer) {
+      stopTimer();
+      timeLeft = 30;
+      timerEl.textContent = timeLeft;
+      timerEl.classList.remove("hidden");
+
+      timerAudio.currentTime = 0;
+      timerAudio.play().catch(() => {});
+
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = timeLeft;
+if (timeLeft <= 0) {
+  clearInterval(timerInterval);
+  stopTimer();
+  if (!answered) {
+    const options = document.querySelectorAll(".answer");
+    options.forEach(btn => {
+      if (btn.dataset.key === correctAnswer) btn.classList.add("correct");
+      else btn.classList.add("wrong");
+      btn.style.pointerEvents = "none";
+    });
+    wrongAudio.play();
+    answered = true;
+    nextBtn.style.display = "inline-block";
+  }
+}
+
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+      timerAudio.pause();
+    }
+
+    startBtn.addEventListener("click", () => {
+      welcomeScreen.classList.add("hidden");
+      scoreboardEl.classList.remove("hidden");
+      quizContainer.classList.remove("hidden");
+      quizStarted = true;
+      updateScoreboard();
+      showQuestion(currentQuestion);
+    });
+  </script>
+</body>
+</html>

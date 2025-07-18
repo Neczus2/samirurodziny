@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Familiada – Teleturniej</title>
+  <style>
+    body {
+      font-family: 'Arial Black', sans-serif;
+      margin: 0;
+      text-align: center;
+      background: linear-gradient(to bottom, #002366, #0033cc);
+      color: white;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      font-size: 42px;
+      margin-top: 40px;
+      color: yellow;
+      text-shadow: 2px 2px black;
+    }
+
+    #startScreen {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #startBtn {
+      margin-top: 30px;
+      padding: 15px 30px;
+      font-size: 22px;
+      font-weight: bold;
+      background-color: gold;
+      color: black;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    #game {
+      display: none;
+      padding: 40px;
+      position: relative;
+    }
+
+    .question {
+      font-size: 28px;
+      margin-bottom: 40px;
+    }
+
+    table.answersTable {
+      margin: 0 auto;
+      border-collapse: collapse;
+      width: 600px;
+      table-layout: fixed;
+      color: white;
+      font-size: 26px;
+    }
+
+    table.answersTable td {
+      padding: 8px 10px;
+      vertical-align: middle;
+    }
+
+    table.answersTable td.number {
+      width: 50px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    table.answersTable td.dots {
+      width: 100px;
+      font-family: monospace;
+      color: #ccc;
+      letter-spacing: 8px;
+      text-align: center;
+    }
+
+    table.answersTable td.text {
+      text-align: left;
+      visibility: hidden;
+    }
+
+    table.answersTable td.points {
+      color: gold;
+      font-weight: bold;
+      padding-left: 10px;
+      visibility: hidden;
+      white-space: nowrap;
+    }
+
+    tr.visible td.text,
+    tr.visible td.points {
+      visibility: visible;
+    }
+
+    tr.visible td.dots {
+      visibility: hidden;
+    }
+
+    .x-box {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .x-mark {
+      font-size: 80px;
+      color: red;
+      text-shadow: 3px 3px black;
+      line-height: 1;
+      margin: 10px 0;
+    }
+
+    #nextBtn {
+      margin-top: 40px;
+      padding: 12px 25px;
+      font-size: 20px;
+      background: gold;
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: none;
+    }
+
+    /* Ekran końcowy */
+    #endScreen {
+      display: none;
+      padding: 40px;
+      color: gold;
+    }
+
+    #returnBtn {
+      margin-top: 30px;
+      padding: 15px 30px;
+      font-size: 22px;
+      font-weight: bold;
+      background-color: gold;
+      color: black;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div id="startScreen">
+  <h1>Witamy w teleturnieju Familiada!</h1>
+  <button id="startBtn">Start</button>
+</div>
+
+<div id="game">
+  <div class="question" id="questionText"></div>
+  <table class="answersTable" id="answers"></table>
+  <div class="x-box" id="xBox"></div>
+  <button id="nextBtn" onclick="nextQuestion()">Następne pytanie</button>
+</div>
+
+<div id="endScreen">
+  <h2>Dziękujemy za udział w teleturnieju Familiada!</h2>
+  <button id="returnBtn">Powrót do Milionerów</button>
+</div>
+
+<!-- 🔊 Dźwięki -->
+<audio id="correctSound" src="dobra.mp3" preload="auto"></audio>
+<audio id="wrongSound" src="zlaa.mp3" preload="auto"></audio>
+<audio id="introMusic" src="intro.mp3" preload="auto" loop></audio>
+
+<script>
+const questions = [
+  { text: "Co można znaleźć w portfelu?", answers: ["Pieniądze", "Karta bankowa", "Dowód osobisty", "Zdjęcie", "Paragon"] },
+  { text: "Co zabierzesz na plażę?", answers: ["Ręcznik", "Krem z filtrem", "Okulary przeciwsłoneczne", "Piłka", "Parasol"] },
+  { text: "Jakie owoce są czerwone?", answers: ["Truskawka", "Wiśnia", "Jabłko", "Malina", "Porzeczka"] },
+  { text: "Czego używasz do pisania?", answers: ["Długopis", "Ołówek", "Pióro", "Klawiatura", "Marker"] },
+  { text: "Z jakich krajów są znane sery?", answers: ["Francja", "Szwajcaria", "Włochy", "Holandia", "Polska"] },
+  { text: "Co może stracić termin ważności?", answers: ["Mleko", "Mięso", "Bilet parkingowy", "Prawo jazdy", "Karta bankowa"] },
+  { text: "Co można powiesić na ścianie?", answers: ["Zdjęcie", "Telewizor", "Lustro", "Obraz", "Zegar"] },
+  { text: "Wymień coś, co spodziewasz się zobaczyć w Paryżu:", answers: ["Wieża Eiffla", "Katedra Notre Dame", "Luwr", "Croissant", "Francuzi"] },
+  { text: "Wymień coś, czego nie można by było zrobić bez ust:", answers: ["Jeść", "Pić", "Całować", "Rozmawiać", "Gwizdać"] },
+  { text: "Wymień coś, z czego słynie Kanada:", answers: ["Hokej", "Zimno", "Wodospad Niagara", "Górale", "Piwo"] },
+  { text: "Co zakładamy do spania?", answers: ["Piżama", "Bielizna", "Koszula nocna", "Skarpety", "Koszulkę"] },
+  { text: "Co kojarzy się z muzyką jazzową?", answers: ["Saksofon", "Trąbka", "Pianino", "Nowy Orlean", "Blues"] },
+  { text: "Wymień coś, co kojarzy się z Rodziną Soprano:", answers: ["Mafia", "Włosi", "Rodzina", "Program telewizyjny"] },
+  { text: "Podaj przykład czegoś, co można określić jako zmieniające życie:", answers: ["Posiadanie dzieci", "Choroba", "Miłość", "Śmierć w rodzinie", "Rozwód"] },
+  { text: "Jakie zwierzę można mieć w domu?", answers: ["Psa", "Kota", "Rybki", "Świnkę morską", "Chomika"] },
+  { text: "Czego ludzie boją się w nocy?", answers: ["Ciemności", "Potworów", "Koszmarów", "Hałasów", "Włamywaczy"] },
+  { text: "Co podajemy na świąteczny obiad?", answers: ["Barszcz z uszkami", "Karpia", "Pierogi", "Zupę grzybową", "Kompot z suszu"] },
+  { text: "Wymień coś związanego z Alicją w Krainie Czarów:", answers: ["Szalony Kapelusznik", "Biały Królik", "Kot z Cheshire", "Alicja", "Królowa Kier"] },
+  { text: "Wymień coś, co sprawdzasz codziennie:", answers: ["E-mail", "Czas/Godzina", "Konto bankowe", "Wiadomości", "Włosy"] },
+  { text: "Podaj przykład czegoś, co znajduje się w każdym filmie o Jamesie Bondzie:", answers: ["James Bond", "Pistolety", "Samochody", "Alkohol", "Eksplozje"] },
+  { text: "Na co można buczeć/co można wybuczeć?", answers: ["Złe aktorstwo", "Rywalizująca drużyna sportowa", "Zły żart", "Zła muzyka", "Sędzia sportowy"] },
+  { text: "Podaj przykład czegoś, czego można używać do zębów?", answers: ["Pasta do zębów", "Aparat ortodontyczny", "Produktów wybielających", "Szczoteczka do zębów", "Nakładki"] },
+  { text: "Podaj przykład czegoś, co jest zrobione z mleka:", answers: ["Masło", "Ser", "Lody", "Jogurt", "Mleko skondensowane"] },
+  { text: "Co można palić?", answers: ["Papierosy", "Cygara", "Grilla", "Drewno w kominku"] },
+  { text: "Co ludzie mogą robić podczas złego filmu?", answers: ["Zasnąć", "Wyjść", "Rozmawiać", "Buczeć", "Ziewać"] },
+  { text: "Podaj przykład czegoś, co może zostać użyte przez lekarza:", answers: ["Stetoskop", "Biały fartuch", "Pacjenci", "Stopień naukowy", "Medycyna"] }
+];
+
+const points = [2, 1, 1, 1, 1];
+let currentQuestion = 0;
+let xCount = 0;
+let introStarted = false;
+
+window.onload = () => {
+  const startBtn = document.getElementById("startBtn");
+  const intro = document.getElementById("introMusic");
+
+  startBtn.addEventListener("click", () => {
+    if (!introStarted) {
+      intro.play().catch(() => {});
+      introStarted = true;
+      startBtn.textContent = "Rozpocznij grę";
+    } else {
+      intro.pause();
+      intro.currentTime = 0;
+      startGame();
+    }
+  });
+};
+
+function startGame() {
+  document.getElementById("startScreen").style.display = "none";
+  document.getElementById("game").style.display = "block";
+  loadQuestion();
+}
+
+function loadQuestion() {
+  const q = questions[currentQuestion];
+  document.getElementById("questionText").innerText = q.text;
+
+  const answersTable = document.getElementById("answers");
+  answersTable.innerHTML = "";
+
+  q.answers.forEach((text, i) => {
+    const tr = document.createElement("tr");
+    tr.id = `answer${i + 1}`;
+    tr.innerHTML = `
+      <td class="number">${i + 1}.</td>
+      <td class="dots">••••••••</td>
+      <td class="text">${text}</td>
+      <td class="points">${points[i]} pkt</td>
+    `;
+    answersTable.appendChild(tr);
+  });
+
+  document.getElementById("xBox").innerHTML = "";
+  xCount = 0;
+  document.getElementById("nextBtn").style.display = "none";
+}
+
+function nextQuestion() {
+  currentQuestion++;
+  if (currentQuestion < questions.length) {
+    loadQuestion();
+  } else {
+    // Koniec pytań - pokaż podziękowanie i przycisk, ukryj grę
+    document.getElementById("game").style.display = "none";
+    const endScreen = document.getElementById("endScreen");
+    endScreen.style.display = "block";
+
+    const returnBtn = document.getElementById("returnBtn");
+    returnBtn.onclick = () => {
+      window.location.href = "milionerzy.html";
+    };
+  }
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key >= '1' && e.key <= '5') {
+    const tr = document.getElementById(`answer${e.key}`);
+    if (tr && !tr.classList.contains("visible")) {
+      tr.classList.add("visible");
+
+      // Odpal dźwięk dobry lub zły (tutaj przykładowo zawsze poprawny)
+      document.getElementById("correctSound").play().catch(() => {});
+
+      document.getElementById("nextBtn").style.display = "inline-block";
+    }
+  }
+});
+
+</script>
+
+</body>
+</html>
