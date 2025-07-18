@@ -101,13 +101,27 @@
       visibility: hidden;
     }
 
-    .x-box {
-      position: absolute;
-      top: 20px;
-      right: 30px;
+    /* Pojemniki na X po lewej i prawej */
+    .x-box-left {
+      position: fixed;
+      top: 50%;
+      left: 30px;
+      transform: translateY(-50%);
       display: flex;
       flex-direction: column;
       align-items: center;
+      z-index: 1000;
+    }
+
+    .x-box-right {
+      position: fixed;
+      top: 50%;
+      right: 30px;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 1000;
     }
 
     .x-mark {
@@ -116,6 +130,14 @@
       text-shadow: 3px 3px black;
       line-height: 1;
       margin: 10px 0;
+      user-select: none;
+    }
+
+    /* Duży X po lewej */
+    .x-mark.large {
+      font-size: 200px !important;
+      margin: 0 !important;
+      text-shadow: 5px 5px 5px black;
     }
 
     #nextBtn {
@@ -161,7 +183,12 @@
 <div id="game">
   <div class="question" id="questionText"></div>
   <table class="answersTable" id="answers"></table>
-  <div class="x-box" id="xBox"></div>
+  
+  <!-- Małe X po prawej -->
+  <div class="x-box-right" id="xBoxRight"></div>
+  <!-- Duży X po lewej -->
+  <div class="x-box-left" id="xBoxLeft"></div>
+  
   <button id="nextBtn" onclick="nextQuestion()">Następne pytanie</button>
 </div>
 
@@ -231,6 +258,7 @@ function startGame() {
   document.getElementById("startScreen").style.display = "none";
   document.getElementById("game").style.display = "block";
   loadQuestion();
+  clearX();
 }
 
 function loadQuestion() {
@@ -245,50 +273,84 @@ function loadQuestion() {
     tr.id = `answer${i + 1}`;
     tr.innerHTML = `
       <td class="number">${i + 1}.</td>
-      <td class="dots">••••••••</td>
+      <td class="dots">...</td>
       <td class="text">${text}</td>
-      <td class="points">${points[i]} pkt</td>
+      <td class="points">${points[i]}</td>
     `;
     answersTable.appendChild(tr);
   });
 
-  document.getElementById("xBox").innerHTML = "";
-  xCount = 0;
   document.getElementById("nextBtn").style.display = "none";
+  clearX();
+  xCount = 0;
+}
+
+function revealAnswer(num) {
+  const tr = document.getElementById(`answer${num}`);
+  if (tr && !tr.classList.contains("visible")) {
+    tr.classList.add("visible");
+    document.getElementById("correctSound").play().catch(() => {});
+  }
+  // pokaż przycisk "Następne pytanie" jeśli odsłonięto wszystkie odpowiedzi
+  const visibleCount = document.querySelectorAll("#answers tr.visible").length;
+  if (visibleCount === 5) {
+    document.getElementById("nextBtn").style.display = "inline-block";
+  }
 }
 
 function nextQuestion() {
   currentQuestion++;
-  if (currentQuestion < questions.length) {
-    loadQuestion();
-  } else {
-    // Koniec pytań - pokaż podziękowanie i przycisk, ukryj grę
+  if (currentQuestion >= questions.length) {
     document.getElementById("game").style.display = "none";
-    const endScreen = document.getElementById("endScreen");
-    endScreen.style.display = "block";
-
-    const returnBtn = document.getElementById("returnBtn");
-    returnBtn.onclick = () => {
-      window.location.href = "index.html";
-    };
+    document.getElementById("endScreen").style.display = "block";
+  } else {
+    loadQuestion();
   }
 }
 
 document.addEventListener("keydown", (e) => {
-  if (e.key >= '1' && e.key <= '5') {
-    const tr = document.getElementById(`answer${e.key}`);
-    if (tr && !tr.classList.contains("visible")) {
-      tr.classList.add("visible");
-
-      // Odpal dźwięk dobry lub zły (tutaj przykładowo zawsze poprawny)
-      document.getElementById("correctSound").play().catch(() => {});
-
-      document.getElementById("nextBtn").style.display = "inline-block";
-    }
+  // klawisze 1-5 odsłaniają odpowiedzi
+  if (e.key >= "1" && e.key <= "5") {
+    revealAnswer(parseInt(e.key));
+  }
+  // klawisz X/x dodaje X
+  if (e.key.toLowerCase() === "x") {
+    addX();
   }
 });
 
-</script>
+function clearX() {
+  document.getElementById("xBoxRight").innerHTML = "";
+  document.getElementById("xBoxLeft").innerHTML = "";
+  xCount = 0;
+}
 
+function addX() {
+  const xBoxRight = document.getElementById("xBoxRight");
+  const xBoxLeft = document.getElementById("xBoxLeft");
+  const wrongSound = document.getElementById("wrongSound");
+
+  if (xCount < 3) {
+    // Dodaj małe x po prawej
+    const span = document.createElement("span");
+    span.className = "x-mark";
+    span.textContent = "×";
+    span.style.fontSize = "80px";
+    xBoxRight.appendChild(span);
+    xCount++;
+  } else if (xCount === 3) {
+    // 4 kliknięcie - usuń małe x po prawej i dodaj jeden duży x po lewej
+    xBoxRight.innerHTML = "";
+    const bigX = document.createElement("div");
+    bigX.className = "x-mark large";
+    bigX.textContent = "×";
+    xBoxLeft.appendChild(bigX);
+    xCount++;
+  } else {
+    // Po więcej kliknięć możesz tu dodać, co chcesz albo nic nie robić
+  }
+  wrongSound.play().catch(() => {});
+}
+</script>
 </body>
 </html>
